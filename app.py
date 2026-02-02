@@ -1,146 +1,80 @@
 import streamlit as st
-import requests
-from groq import Groq
-from datetime import datetime, timedelta
 
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Personalized India News Brief", page_icon="🗞️", layout="wide")
+st.set_page_config(page_title="Project Overview: Daily News Brief Generator", layout="wide")
 
-# Check for API Keys
-if "GROQ_API_KEY" not in st.secrets or "NEWS_API_KEY" not in st.secrets:
-    st.error("Missing API Keys! Please add GROQ_API_KEY and NEWS_API_KEY to Streamlit Secrets.")
-    st.stop()
+st.title("🗞️ Project Overview: Daily News Brief Generator")
+st.subheader("AI-Driven Personalized Insight Delivery")
 
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-NEWS_API_KEY = st.secrets["NEWS_API_KEY"]
+# --- NAVIGATION ---
+tabs = st.tabs(["📌 Project Essence", "⚙️ Implementation Details", "🤖 Judge Q&A", "🚀 User Flow"])
 
-# --- CORE LOGIC ---
+with tabs[0]:
+    st.header("Project Purpose & Problem Statement")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.info("**The Purpose:** To help readers consume relevant information efficiently in an era of information overload[cite: 7].")
+    with col2:
+        st.warning("**The Problem:** Users struggle to filter news by interest, track updates across segments, and avoid long, generic articles[cite: 3, 6, 7].")
 
-def fetch_news(query_term, date, region="India"):
-    """
-    Fetch news from multiple sources via NewsAPI
-    """
-    url = "https://newsapi.org/v2/everything"
-    search_query = f"{query_term} {region}"
+    st.header("Core Objectives")
+    st.markdown("""
+    - **Personalization:** Build a system that understands and caters to specific reader preferences[cite: 18].
+    - **Multi-Source Synthesis:** Aggregate and summarize news from diverse, reliable outlets[cite: 19].
+    - **UX Excellence:** Provide a clean, intuitive, and publicly accessible interface[cite: 21, 22].
+    """)
+
+with tabs[1]:
+    st.header("Technical Requirements & Stack")
     
-    params = {
-        "q": search_query,
-        "from": date.strftime('%Y-%m-%d'),
-        "to": date.strftime('%Y-%m-%d'),
-        "language": "en",
-        "sortBy": "relevancy",
-        "apiKey": NEWS_API_KEY
-    }
+    st.markdown("### Functional Features")
+    cols = st.columns(3)
+    cols[0].write("**User Management:** Preference selection for segments like Tech, Business, and Politics[cite: 25, 26].")
+    cols[1].write("**News Collection:** Multi-source fetching via NewsAPI and search queries[cite: 34, 35].")
+    cols[2].write("**AI Summarization:** Consolidated briefs and punchy 1-sentence summaries[cite: 39, 40].")
+
+    st.markdown("### Technical Stack")
+    st.code("""
+    - Backend: Python
+    - Frontend: Streamlit
+    - AI Engine: Groq (Llama-3.3-70b-versatile)
+    - News Source: NewsAPI
+    - Deployment: Streamlit Cloud
+    """)
+
+with tabs[2]:
+    st.header("Addressing Critical Project Questions")
     
-    try:
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            return response.json().get("articles", [])[:6]
-    except Exception:
-        return []
-    return []
+    with st.expander("🔍 1. How is personalization implemented?"):
+        st.markdown("""
+        **Implementation:** [cite: 25, 33, 51]
+        - **Sidebar Controls:** Users dynamically select news segments (e.g., Technology, Sports) and regions (India vs. Global).
+        - **Session State:** The app uses `st.session_state` and a default selection system to ensure the home page displays the user's preferred brief immediately upon loading.
+        - **Date-Specific Logic:** Users can choose a specific date, allowing the AI to regenerate content for "past or alternate" interests[cite: 47].
+        """)
 
-def generate_ai_brief(articles, category):
-    """Generates the specific format requested: Brief, Punchy Summaries, and Merging Note"""
-    if not articles:
-        return None
+    with st.expander("⚖️ 2. How is conflicting or duplicate news handled?"):
+        st.markdown("""
+        **Implementation:** [cite: 115]
+        - **AI Synthesis:** The prompt sent to the Llama-3 model specifically instructs it to "merge overlapping stories to avoid duplication." 
+        - **Contextual Awareness:** By feeding the AI 6 articles at once, the model identifies thematic overlaps and creates a "Consolidated Executive Brief" that combines facts from multiple sources into one cohesive narrative.
+        - **Transparency:** The app includes a specific "Note" at the end of summaries explaining which sources were merged[cite: 42].
+        """)
 
-    context = ""
-    for i, art in enumerate(articles):
-        context += f"Source {i+1} ({art['source']['name']}): {art['title']} - {art['description']}\n"
+    with st.expander("🛡️ 3. How are summaries kept neutral and unbiased?"):
+        st.markdown("""
+        **Implementation:** [cite: 116]
+        - **Strict Prompt Engineering:** The system prompt mandates a "strictly neutral, professional, and unbiased" tone.
+        - **Multi-Source Aggregation:** By pulling from various outlets (e.g., BBC, Reuters, The Hindu), the AI is exposed to different perspectives, preventing single-source bias[cite: 35, 70].
+        - **Low Temperature Setting:** The AI's `temperature` is set to 0.3 to minimize "creativity" and ensure the model remains grounded in the provided factual data.
+        """)
 
-    # Strict formatting instructions
-    prompt = f"""
-    You are an AI news editor. Based on these articles for '{category}':
-    
-    1. Start with 'Consolidated Executive Brief: ' followed by a 3-sentence synthesis.
-    2. Then write 'Punchy Summaries:' followed by a list of 1-sentence summaries for each unique story.
-    3. End with a 'Note: ' explaining if you merged overlapping stories (be specific about which sources).
-    
-    Tone: Strictly neutral, professional, and unbiased.
-    
-    News Articles:
-    {context}
-    """
-
-    completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3
-    )
-    return completion.choices[0].message.content
-
-# --- UI & STATE MANAGEMENT ---
-
-if "search_result" not in st.session_state:
-    st.session_state.search_result = None
-if "search_query" not in st.session_state:
-    st.session_state.search_query = None
-
-# Sidebar for Preferences
-with st.sidebar:
-    st.title("⚙️ Personalization")
-    
-    all_categories = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics","Everything"]
-    user_prefs = st.multiselect("Your preferred segments:", all_categories, default=["Technology", "Business"])
-    
-    region = st.radio("Region:", ["India", "Global"], horizontal=True)
-    selected_date = st.date_input("Select Date", datetime.now() - timedelta(days=1))
-    
-    st.divider()
-    
-    st.subheader("🤖 News Assistant")
-    chat_input = st.chat_input("Ask about a specific topic...")
-    
-    if chat_input:
-        with st.spinner(f"Searching for '{chat_input}'..."):
-            results = fetch_news(chat_input, selected_date, region)
-            if results:
-                st.session_state.search_query = chat_input
-                st.session_state.search_result = {
-                    "brief": generate_ai_brief(results, chat_input),
-                    "sources": results
-                }
-            else:
-                st.session_state.search_query = chat_input
-                st.session_state.search_result = "No news found."
-
-# --- MAIN SCREEN DISPLAY ---
-
-st.title(f"🗞️ Daily News Briefing")
-st.caption(f"Showing results for {selected_date.strftime('%d %b %Y')} | Region: {region}")
-
-# 1. Display Chat Search Result First
-if st.session_state.search_result:
-    st.markdown(f"## 🔍 Search: {st.session_state.search_query}")
-    if isinstance(st.session_state.search_result, dict):
-        st.markdown(st.session_state.search_result["brief"])
-        
-        with st.expander("🔗 View Sources & Timestamps"):
-            for art in st.session_state.search_result["sources"]:
-                st.markdown(f"**{art['source']['name']}**: [{art['title']}]({art['url']})")
-    else:
-        st.info(st.session_state.search_result)
-    
-    if st.button("Clear Search Results"):
-        st.session_state.search_result = None
-        st.rerun()
-    st.divider()
-
-# 2. Display Categorized News
-for category in user_prefs:
-    st.markdown(f"### 🔹 {category}")
-    articles = fetch_news(category, selected_date, region)
-    
-    if articles:
-        with st.spinner(f"Summarizing {category}..."):
-            brief = generate_ai_brief(articles, category)
-            st.markdown(brief)
-        
-        with st.expander("🔗 View Sources & Timestamps"):
-            for art in articles:
-                st.markdown(f"**{art['source']['name']}**: [{art['title']}]({art['url']})")
-        st.divider()
-    else:
-        st.info(f"No news found for {category}.")
-
+with tabs[3]:
+    st.header("Expected Application Flow")
+    st.markdown(f"""
+    1. **Landing:** User opens the application[cite: 72].
+    2. **Setup:** User selects segments (e.g., Business, Health) in the sidebar[cite: 73].
+    3. **Briefing:** The app automatically loads the personalized brief on the home page[cite: 74].
+    4. **Interaction:** User can change dates or refresh the feed to get the latest updates[cite: 77, 78].
+    5. **Deep Dive:** User explores concise summaries or uses the **News Assistant** for specific real-time queries.
+    """)
+    st.image("https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png", width=200)
