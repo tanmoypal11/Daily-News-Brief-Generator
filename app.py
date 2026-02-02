@@ -4,7 +4,7 @@ from groq import Groq
 from datetime import datetime, timedelta
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="India Daily News Brief", page_icon="🗞️", layout="wide")
+st.set_page_config(page_title="Global & India News Brief", page_icon="🗞️", layout="wide")
 
 # Initialize Clients
 if "NEWS_API_KEY" not in st.secrets or "GROQ_API_KEY" not in st.secrets:
@@ -16,13 +16,12 @@ NEWS_API_KEY = st.secrets["NEWS_API_KEY"]
 
 # --- FUNCTIONS ---
 
-def fetch_india_news(category, date):
-    """Fetches news from multiple Indian sources using NewsAPI."""
-    # We use /everything to allow for historical date filtering as per project requirements
+def fetch_news(category, date, region):
+    """Fetches news based on category and region (India vs World)."""
     url = "https://newsapi.org/v2/everything"
     
-    # Mapping 'Politics' and others to specific queries for better Indian context
-    query = f"{category} India"
+    # Logic to switch query based on toggle
+    query = f"{category} India" if region == "India" else f"{category}"
     
     params = {
         "q": query,
@@ -33,23 +32,25 @@ def fetch_india_news(category, date):
         "apiKey": NEWS_API_KEY
     }
     
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        return response.json().get("articles", [])[:5] # Get top 5 articles
+    try:
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            return response.json().get("articles", [])[:5]
+    except Exception as e:
+        st.error(f"Error fetching news: {e}")
     return []
 
-def summarize_brief(articles, category):
-    """Uses Groq to summarize the headlines into a concise brief."""
+def summarize_brief(articles, category, region):
+    """Uses Groq to summarize headlines into a 10-bullet point brief."""
     if not articles:
         return "No news found for this date/category."
     
-    # Combine headlines and snippets for the AI
     context = "\n".join([f"- {a['title']}: {a['description']}" for a in articles])
     
     prompt = f"""
-    You are an expert news editor. Summarize the following news headlines about '{category}' in India 
+    You are an expert news editor. Summarize the following {region} news headlines about '{category}' 
     into a concise, 10-bullet point brief for a busy professional. 
-    Focus on impact and clarity.
+    Ensure the tone is neutral and professional.
     
     News Data:
     {context}
@@ -64,27 +65,27 @@ def summarize_brief(articles, category):
 
 # --- UI LAYOUT ---
 
-st.title("🇮🇳 AI Daily News Brief Generator")
-st.markdown("---")
-
-# Sidebar for Preferences (Required by Project Doc)
+# Sidebar for Preferences
 with st.sidebar:
-    st.header("Settings")
-    selected_date = st.date_input("Select Date", datetime.now() - timedelta(days=1))
-    st.info("This app aggregates news from multiple sources and uses Llama-3 to summarize them.")
+    st.header("⚙️ Personalization")
     
-    # Your existing Chatbot logic integrated as a 'News Assistant'
+    # --- THE TOGGLE ---
+    region_toggle = st.radio("Select News Region:", ["India", "World"], index=0, horizontal=True)
+    selected_date = st.date_input("Select Date", datetime.now() - timedelta(days=1))
+    
     st.divider()
-    st.subheader("🤖 Ask News Assistant")
+    st.info(f"Currently viewing **{region_toggle}** news for **{selected_date}**.")
+    
+    # Integrated Chatbot Logic
+    st.subheader("🤖 News Assistant")
     if "messages" not in st.session_state:
         st.session_state.messages = []
         
     for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
 
-    if chat_input := st.chat_input("Ask about today's news..."):
+    if chat_input := st.chat_input("Ask about the news..."):
         st.session_state.messages.append({"role": "user", "content": chat_input})
-        # Note: In a production app, you'd pass the current news as context here.
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
@@ -92,36 +93,33 @@ with st.sidebar:
         st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message.content})
         st.rerun()
 
-# Main Tabs (The 6 categories you requested)
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "Technology", "Business", "Sports", "Health", "Entertainment", "Politics"
-])
+# Dynamic Title
+flag = "🇮🇳" if region_toggle == "India" else "🌐"
+st.title(f"{flag} AI {region_toggle} Daily Brief")
+st.markdown(f"Generated for {selected_date.strftime('%B %d, %Y')}")
+st.markdown("---")
 
-tabs = {
-    "Technology": tab1, "Business": tab2, "Sports": tab3, 
-    "Health": tab4, "Entertainment": tab5, "Politics": tab6
-}
+# Main Tabs
+tabs_list = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics"]
+tabs = st.tabs(tabs_list)
 
-for category, tab_obj in tabs.items():
-    with tab_obj:
+for i, category in enumerate(tabs_list):
+    with tabs[i]:
         st.header(f"Top {category} Stories")
         
-        with st.spinner(f"Aggregating {category} news..."):
-            articles = fetch_india_news(category, selected_date)
+        with st.spinner(f"Gathering {region_toggle} {category} news..."):
+            articles = fetch_news(category, selected_date, region_toggle)
             
             if articles:
-                # 1. AI Summary Section
-                st.subheader("✨ AI Summary")
-                summary = summarize_brief(articles, category)
-                st.write(summary)
+                st.subheader("✨ AI Insights (10-Point Brief)")
+                summary = summarize_brief(articles, category, region_toggle)
+                st.markdown(summary)
                 
-                # 2. Source List (Required for Multi-Source Aggregation)
                 st.divider()
-                st.subheader("🔗 Full Articles")
+                st.subheader("🔗 Primary Sources")
                 for art in articles:
-                    with st.expander(f"{art['source']['name']}: {art['title']}"):
+                    with st.expander(f"{art['source']['name']} | {art['title']}"):
                         st.write(art['description'])
-                        st.link_button("Read Full Story", art['url'])
+                        st.link_button("Read Original Article", art['url'])
             else:
-
-                st.warning("No news found for this category on the selected date.")
+                st.warning(f"No {category} news found for this date in the {region_toggle} region.")
