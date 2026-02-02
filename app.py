@@ -17,7 +17,9 @@ NEWS_API_KEY = st.secrets["NEWS_API_KEY"]
 # --- CORE LOGIC ---
 
 def fetch_news(query_term, date, region="India"):
-    """Fetch news from multiple sources via NewsAPI [cite: 35, 36]"""
+    """
+    Fetch news from multiple sources via NewsAPI [cite: 35, 36]
+    """
     url = "https://newsapi.org/v2/everything"
     search_query = f"{query_term} {region}"
     
@@ -145,3 +147,4 @@ for category in user_prefs:
         st.divider()
     else:
         st.info(f"No news found for {category}.")
+
