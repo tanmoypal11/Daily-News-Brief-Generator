@@ -81,7 +81,7 @@ if "search_query" not in st.session_state:
 with st.sidebar:
     st.title("⚙️ Personalization")
     
-    all_categories = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics"]
+    all_categories = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics","Everything"]
     user_prefs = st.multiselect("Your preferred segments:", all_categories, default=["Technology", "Business"])
     
     region = st.radio("Region:", ["India", "Global"], horizontal=True)
@@ -143,3 +143,4 @@ for category in user_prefs:
         st.divider()
     else:
         st.info(f"No news found for {category}.")
+
