@@ -18,7 +18,7 @@ NEWS_API_KEY = st.secrets["NEWS_API_KEY"]
 
 def fetch_news(query_term, date, region="India"):
     """
-    Fetch news from multiple sources via NewsAPI [cite: 35, 36]
+    Fetch news from multiple sources via NewsAPI
     """
     url = "https://newsapi.org/v2/everything"
     search_query = f"{query_term} {region}"
@@ -41,7 +41,7 @@ def fetch_news(query_term, date, region="India"):
     return []
 
 def generate_ai_brief(articles, category):
-    """Generates the specific format requested: Brief, Punchy Summaries, and Merging Note """
+    """Generates the specific format requested: Brief, Punchy Summaries, and Merging Note"""
     if not articles:
         return None
 
@@ -49,7 +49,7 @@ def generate_ai_brief(articles, category):
     for i, art in enumerate(articles):
         context += f"Source {i+1} ({art['source']['name']}): {art['title']} - {art['description']}\n"
 
-    # Strict formatting instructions to match user's example
+    # Strict formatting instructions
     prompt = f"""
     You are an AI news editor. Based on these articles for '{category}':
     
@@ -72,7 +72,6 @@ def generate_ai_brief(articles, category):
 
 # --- UI & STATE MANAGEMENT ---
 
-# Initialize session state for the "Main Screen" chat response
 if "search_result" not in st.session_state:
     st.session_state.search_result = None
 if "search_query" not in st.session_state:
@@ -80,22 +79,20 @@ if "search_query" not in st.session_state:
 
 # Sidebar for Preferences
 with st.sidebar:
-    st.title("⚙️ Personalization") [cite: 25]
+    st.title("⚙️ Personalization")
     
     all_categories = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics"]
-    user_prefs = st.multiselect("Your preferred segments:", all_categories, default=["Technology", "Business"]) [cite: 26]
+    user_prefs = st.multiselect("Your preferred segments:", all_categories, default=["Technology", "Business"])
     
     region = st.radio("Region:", ["India", "Global"], horizontal=True)
-    selected_date = st.date_input("Select Date", datetime.now() - timedelta(days=1)) [cite: 47]
+    selected_date = st.date_input("Select Date", datetime.now() - timedelta(days=1))
     
     st.divider()
     
-    # Chat Box (Clears history after each use for efficiency)
     st.subheader("🤖 News Assistant")
     chat_input = st.chat_input("Ask about a specific topic...")
     
     if chat_input:
-        # Fetch and generate immediately to display on main screen
         with st.spinner(f"Searching for '{chat_input}'..."):
             results = fetch_news(chat_input, selected_date, region)
             if results:
@@ -113,13 +110,12 @@ with st.sidebar:
 st.title(f"🗞️ Daily News Briefing")
 st.caption(f"Showing results for {selected_date.strftime('%d %b %Y')} | Region: {region}")
 
-# 1. Display Chat Search Result First (if exists)
+# 1. Display Chat Search Result First
 if st.session_state.search_result:
     st.markdown(f"## 🔍 Search: {st.session_state.search_query}")
     if isinstance(st.session_state.search_result, dict):
         st.markdown(st.session_state.search_result["brief"])
         
-        # Sources formatting matching user requirement [cite: 53]
         with st.expander("🔗 View Sources & Timestamps"):
             for art in st.session_state.search_result["sources"]:
                 st.markdown(f"**{art['source']['name']}**: [{art['title']}]({art['url']})")
@@ -131,7 +127,7 @@ if st.session_state.search_result:
         st.rerun()
     st.divider()
 
-# 2. Display Categorized News [cite: 52]
+# 2. Display Categorized News
 for category in user_prefs:
     st.markdown(f"### 🔹 {category}")
     articles = fetch_news(category, selected_date, region)
@@ -147,4 +143,3 @@ for category in user_prefs:
         st.divider()
     else:
         st.info(f"No news found for {category}.")
-
