@@ -1,80 +1,86 @@
 import streamlit as st
 
-st.set_page_config(page_title="Project Overview: Daily News Brief Generator", layout="wide")
+st.set_page_config(page_title="Project Documentation", layout="wide", page_icon="📑")
 
-st.title("🗞️ Project Overview: Daily News Brief Generator")
-st.subheader("AI-Driven Personalized Insight Delivery")
+st.title("📑 Project Documentation & Overview")
 
-# --- NAVIGATION ---
-tabs = st.tabs(["📌 Project Essence", "⚙️ Implementation Details", "🤖 Judge Q&A", "🚀 User Flow"])
+# 1. Project Essence
+st.header("1. Project Essence")
+col1, col2 = st.columns(2)
+with col1:
+    st.info("**Purpose:** To help readers efficiently consume relevant news in a world of information overload.")
+with col2:
+    st.warning("**Problem:** Users struggle to filter interests and avoid generic, long-form articles.")
 
-with tabs[0]:
-    st.header("Project Purpose & Problem Statement")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.info("**The Purpose:** To help readers consume relevant information efficiently in an era of information overload[cite: 7].")
-    with col2:
-        st.warning("**The Problem:** Users struggle to filter news by interest, track updates across segments, and avoid long, generic articles[cite: 3, 6, 7].")
+st.divider()
 
-    st.header("Core Objectives")
+# 2. Technical Implementation Details
+st.header("2. Technical Implementation")
+
+tab1, tab2, tab3 = st.tabs(["Preference Handling", "News Aggregation", "AI & Neutrality"])
+
+with tab1:
+    st.subheader("Logic: User Preference Handling")
+    st.write("""
+    The application prioritizes user choice to provide a personalized experience:
+    - **Session State Management:** The app uses `st.session_state` to store user-selected segments (e.g., Technology, Business) and regions. This ensures that the personalized brief remains consistent even if the page is refreshed during a single session.
+    - **Sidebar Integration:** Preferences are collected via a sidebar `st.multiselect`. The main application loop reads these selections to trigger specific API calls for each chosen category.
+    - **Persistence:** By default, the app initializes with "Technology" and "Business," allowing judges to see immediate value while offering full control to change them.
+    """)
+
+with tab2:
+    st.subheader("Approach: News Aggregation")
+    st.write("""
+    To ensure diverse and reliable data, the app follows a multi-step aggregation pipeline:
+    - **Multi-Source Fetching:** The system utilizes **NewsAPI** to query 'Everything' within the last 24 hours. This allows it to pull from global outlets like BBC, Reuters, and Al Jazeera, as well as local Indian sources.
+    - **Query Construction:** For every category, the app constructs a targeted search query (e.g., `Technology India`).
+    - **Data Filtering:** We limit results to the top 6 most relevant articles per category to maintain a "brief" format and stay within AI token limits.
+    """)
+
+with tab3:
+    st.subheader("Logic: AI Synthesis & Neutrality")
+    st.write("""
+    - **Deduplication:** The Llama-3 model is explicitly prompted to identify and merge overlapping stories from different sources, preventing the user from reading the same fact twice.
+    - **Neutrality:** The system prompt mandates a "strictly neutral, professional, and unbiased" tone. By using a low `temperature` (0.3), we ensure the AI sticks to the facts provided by the news sources.
+    """)
+
+st.divider()
+
+# 3. Sample User Flows
+st.header("3. Sample User Flows")
+
+# Visualizing the flow
+
+
+with st.expander("🚀 View Step-by-Step Flow"):
     st.markdown("""
-    - **Personalization:** Build a system that understands and caters to specific reader preferences[cite: 18].
-    - **Multi-Source Synthesis:** Aggregate and summarize news from diverse, reliable outlets[cite: 19].
-    - **UX Excellence:** Provide a clean, intuitive, and publicly accessible interface[cite: 21, 22].
-    """)
-
-with tabs[1]:
-    st.header("Technical Requirements & Stack")
+    **Step 1: Landing & Initialization**
+    - The user opens the URL. 
+    - The app detects default preferences and automatically generates a "Technology" and "Business" brief.
     
-    st.markdown("### Functional Features")
-    cols = st.columns(3)
-    cols[0].write("**User Management:** Preference selection for segments like Tech, Business, and Politics[cite: 25, 26].")
-    cols[1].write("**News Collection:** Multi-source fetching via NewsAPI and search queries[cite: 34, 35].")
-    cols[2].write("**AI Summarization:** Consolidated briefs and punchy 1-sentence summaries[cite: 39, 40].")
-
-    st.markdown("### Technical Stack")
-    st.code("""
-    - Backend: Python
-    - Frontend: Streamlit
-    - AI Engine: Groq (Llama-3.3-70b-versatile)
-    - News Source: NewsAPI
-    - Deployment: Streamlit Cloud
-    """)
-
-with tabs[2]:
-    st.header("Addressing Critical Project Questions")
+    **Step 2: Personalization**
+    - The user opens the sidebar and adds "Sports" to their preferred segments.
+    - The app instantly reruns, fetches sports news, and adds a new summarized section to the dashboard.
     
-    with st.expander("🔍 1. How is personalization implemented?"):
-        st.markdown("""
-        **Implementation:** [cite: 25, 33, 51]
-        - **Sidebar Controls:** Users dynamically select news segments (e.g., Technology, Sports) and regions (India vs. Global).
-        - **Session State:** The app uses `st.session_state` and a default selection system to ensure the home page displays the user's preferred brief immediately upon loading.
-        - **Date-Specific Logic:** Users can choose a specific date, allowing the AI to regenerate content for "past or alternate" interests[cite: 47].
-        """)
-
-    with st.expander("⚖️ 2. How is conflicting or duplicate news handled?"):
-        st.markdown("""
-        **Implementation:** [cite: 115]
-        - **AI Synthesis:** The prompt sent to the Llama-3 model specifically instructs it to "merge overlapping stories to avoid duplication." 
-        - **Contextual Awareness:** By feeding the AI 6 articles at once, the model identifies thematic overlaps and creates a "Consolidated Executive Brief" that combines facts from multiple sources into one cohesive narrative.
-        - **Transparency:** The app includes a specific "Note" at the end of summaries explaining which sources were merged[cite: 42].
-        """)
-
-    with st.expander("🛡️ 3. How are summaries kept neutral and unbiased?"):
-        st.markdown("""
-        **Implementation:** [cite: 116]
-        - **Strict Prompt Engineering:** The system prompt mandates a "strictly neutral, professional, and unbiased" tone.
-        - **Multi-Source Aggregation:** By pulling from various outlets (e.g., BBC, Reuters, The Hindu), the AI is exposed to different perspectives, preventing single-source bias[cite: 35, 70].
-        - **Low Temperature Setting:** The AI's `temperature` is set to 0.3 to minimize "creativity" and ensure the model remains grounded in the provided factual data.
-        """)
-
-with tabs[3]:
-    st.header("Expected Application Flow")
-    st.markdown(f"""
-    1. **Landing:** User opens the application[cite: 72].
-    2. **Setup:** User selects segments (e.g., Business, Health) in the sidebar[cite: 73].
-    3. **Briefing:** The app automatically loads the personalized brief on the home page[cite: 74].
-    4. **Interaction:** User can change dates or refresh the feed to get the latest updates[cite: 77, 78].
-    5. **Deep Dive:** User explores concise summaries or uses the **News Assistant** for specific real-time queries.
+    **Step 3: Deep Dive (AI Assistant)**
+    - The user wants to know about a specific event not in the brief (e.g., "Budget 2024").
+    - They type the query into the **News Assistant** chat box.
+    - The app fetches the latest articles on that specific topic and generates a custom executive summary.
+    
+    **Step 4: Source Verification**
+    - The user clicks the **"View Sources"** expander under any summary to see the original article links and verify the information.
     """)
-    st.image("https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png", width=200)
+
+st.divider()
+
+# 4. Judge Q&A Section
+st.header("4. Judge's Corner (Quick Answers)")
+qa_col1, qa_col2 = st.columns(2)
+
+with qa_col1:
+    st.markdown("**Q: How do you handle conflicting news?**")
+    st.write("A: The AI editor is instructed to note discrepancies if they exist but primarily focuses on synthesizing shared facts across sources to provide a 'Consolidated Executive Brief'.")
+
+with qa_col2:
+    st.markdown("**Q: Is this scalable?**")
+    st.write("A: Yes. By using a modular `fetch_news` function and an LLM for synthesis, we can add more sources (RSS, GNews) or categories without changing the core UI.")
