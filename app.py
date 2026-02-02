@@ -48,7 +48,7 @@ def summarize_brief(articles, category):
     
     prompt = f"""
     You are an expert news editor. Summarize the following news headlines about '{category}' in India 
-    into a concise, 3-bullet point brief for a busy professional. 
+    into a concise, 10-bullet point brief for a busy professional. 
     Focus on impact and clarity.
     
     News Data:
@@ -123,4 +123,5 @@ for category, tab_obj in tabs.items():
                         st.write(art['description'])
                         st.link_button("Read Full Story", art['url'])
             else:
+
                 st.warning("No news found for this category on the selected date.")
