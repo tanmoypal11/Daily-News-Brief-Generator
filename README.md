@@ -54,7 +54,7 @@ Run the App:
 
 Bash
 streamlit run app.py
-🧠 Technical Logic (For Judges)
+🧠 Technical Logic
 1. Personalization Logic
 The app uses a Reactivity Loop. When a user selects a category (e.g., "Technology"), the app dynamically constructs a search query combined with the user's selected region and date. Preferences are stored in the session state to ensure a seamless "Default Home Page" experience.
 
@@ -78,5 +78,6 @@ Journalistic Prompting: The system role is defined as a "Strictly Neutral News E
 
 📬 Contact & Submission
 Developer: Tanmoy Pal
+
 
 Project Goal: Submission for the AI Daily News Brief Challenge.
