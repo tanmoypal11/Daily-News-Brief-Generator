@@ -4,122 +4,113 @@ from groq import Groq
 from datetime import datetime, timedelta
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Global & India News Brief", page_icon="🗞️", layout="wide")
+st.set_page_config(page_title="Personalized Daily Brief", page_icon="🗞️", layout="wide")
 
-# Initialize Clients
-if "NEWS_API_KEY" not in st.secrets or "GROQ_API_KEY" not in st.secrets:
-    st.error("Please set NEWS_API_KEY and GROQ_API_KEY in Streamlit Secrets.")
+# Check for API Keys in Secrets
+if "GROQ_API_KEY" not in st.secrets or "NEWS_API_KEY" not in st.secrets:
+    st.error("Missing API Keys! Please add GROQ_API_KEY and NEWS_API_KEY to your Streamlit Secrets.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 NEWS_API_KEY = st.secrets["NEWS_API_KEY"]
 
-# --- FUNCTIONS ---
+# --- CORE LOGIC ---
 
-def fetch_news(category, date, region):
-    """Fetches news based on category and region (India vs World)."""
+def fetch_news(category, date, region="India"):
+    """Fetch news from multiple sources via NewsAPI [cite: 151, 152]"""
     url = "https://newsapi.org/v2/everything"
-    
-    # Logic to switch query based on toggle
-    query = f"{category} India" if region == "India" else f"{category}"
+    query = f"{category} {region}"
     
     params = {
         "q": query,
         "from": date.strftime('%Y-%m-%d'),
         "to": date.strftime('%Y-%m-%d'),
         "language": "en",
-        "sortBy": "popularity",
+        "sortBy": "relevancy",
         "apiKey": NEWS_API_KEY
     }
     
-    try:
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            return response.json().get("articles", [])[:5]
-    except Exception as e:
-        st.error(f"Error fetching news: {e}")
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        # Return top 6 articles to ensure multi-source diversity [cite: 200]
+        return response.json().get("articles", [])[:6]
     return []
 
-def summarize_brief(articles, category, region):
-    """Uses Groq to summarize headlines into a 10-bullet point brief."""
+def generate_ai_brief(articles, category):
+    """Consolidated daily brief and article summaries using AI [cite: 157, 158]"""
     if not articles:
-        return "No news found for this date/category."
-    
-    context = "\n".join([f"- {a['title']}: {a['description']}" for a in articles])
-    
+        return None, None
+
+    # Prepare context for AI
+    context = ""
+    for i, art in enumerate(articles):
+        context += f"Source {i+1} ({art['source']['name']}): {art['title']} - {art['description']}\n"
+
     prompt = f"""
-    You are an expert news editor. Summarize the following {region} news headlines about '{category}' 
-    into a concise, 10-bullet point brief for a busy professional. 
-    Ensure the tone is neutral and professional.
+    You are an AI news editor. Based on these articles for the '{category}' segment:
+    1. Create a 3-sentence 'Consolidated Executive Brief' that synthesizes the main trends.
+    2. Provide a 1-sentence punchy summary for each unique story.
+    3. Ensure the tone is strictly neutral, professional, and unbiased. 
+    4. If stories overlap, merge them into a single insight to avoid duplication.
     
-    News Data:
+    News Articles:
     {context}
     """
-    
+
     completion = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}],
-        stream=False
+        temperature=0.3 # Low temperature for neutrality and factual consistency 
     )
     return completion.choices[0].message.content
 
-# --- UI LAYOUT ---
+# --- UI & USER EXPERIENCE [cite: 137, 165] ---
 
-# Sidebar for Preferences
+# 1. User Preference Management (First-time setup/Sidebar) [cite: 141, 189]
 with st.sidebar:
-    st.header("⚙️ Personalization")
+    st.title("⚙️ Your Preferences")
     
-    # --- THE TOGGLE ---
-    region_toggle = st.radio("Select News Region:", ["India", "World"], index=0, horizontal=True)
+    # Category selection [cite: 142]
+    all_categories = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics"]
+    if "user_prefs" not in st.session_state:
+        st.session_state.user_prefs = ["Technology", "Business"]
+    
+    st.session_state.user_prefs = st.multiselect(
+        "Select your preferred segments:", 
+        all_categories, 
+        default=st.session_state.user_prefs
+    )
+
+    region = st.radio("Region focus:", ["India", "Global"], horizontal=True)
     selected_date = st.date_input("Select Date", datetime.now() - timedelta(days=1))
     
     st.divider()
-    st.info(f"Currently viewing **{region_toggle}** news for **{selected_date}**.")
-    
-    # Integrated Chatbot Logic
-    st.subheader("🤖 News Assistant")
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-        
-    for msg in st.session_state.messages:
-        st.chat_message(msg["role"]).write(msg["content"])
-
-    if chat_input := st.chat_input("Ask about the news..."):
-        st.session_state.messages.append({"role": "user", "content": chat_input})
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
-        )
-        st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message.content})
+    if st.button("🔄 Refresh Latest Updates"): # [cite: 164]
         st.rerun()
 
-# Dynamic Title
-flag = "🇮🇳" if region_toggle == "India" else "🌐"
-st.title(f"{flag} AI {region_toggle} Daily Brief")
-st.markdown(f"Generated for {selected_date.strftime('%B %d, %Y')}")
-st.markdown("---")
+# 2. Main Page Display [cite: 128, 167]
+st.title(f"🗞️ Your Daily Brief — {selected_date.strftime('%d %b %Y')}")
+st.caption(f"Personalized for {region} interests | Sources include BBC, Reuters, The Hindu, and more ")
 
-# Main Tabs
-tabs_list = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics"]
-tabs = st.tabs(tabs_list)
-
-for i, category in enumerate(tabs_list):
-    with tabs[i]:
-        st.header(f"Top {category} Stories")
-        
-        with st.spinner(f"Gathering {region_toggle} {category} news..."):
-            articles = fetch_news(category, selected_date, region_toggle)
+if not st.session_state.user_prefs:
+    st.warning("Please select at least one news segment in the sidebar to begin.")
+else:
+    # Section-wise layout [cite: 168]
+    for category in st.session_state.user_prefs:
+        with st.container():
+            st.header(f"🔹 {category}")
+            articles = fetch_news(category, selected_date, region)
             
             if articles:
-                st.subheader("✨ AI Insights (10-Point Brief)")
-                summary = summarize_brief(articles, category, region_toggle)
-                st.markdown(summary)
+                # Generate AI Summaries [cite: 155]
+                with st.spinner(f"Synthesizing {category} brief..."):
+                    brief_content = generate_ai_brief(articles, category)
+                    st.markdown(brief_content)
                 
+                # Source references and timestamps [cite: 169]
+                with st.expander("🔗 View Primary Sources"):
+                    for art in articles:
+                        st.markdown(f"**{art['source']['name']}**: [{art['title']}]({art['url']})")
                 st.divider()
-                st.subheader("🔗 Primary Sources")
-                for art in articles:
-                    with st.expander(f"{art['source']['name']} | {art['title']}"):
-                        st.write(art['description'])
-                        st.link_button("Read Original Article", art['url'])
             else:
-                st.warning(f"No {category} news found for this date in the {region_toggle} region.")
+                st.info(f"No significant updates found for {category} on this date.")
