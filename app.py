@@ -113,9 +113,21 @@ if chat_input:
             brief = generate_ai_brief(results, chat_input, detail_level)
             st.markdown(f"## 🔍 Custom Insight: {chat_input}")
             st.markdown(brief)
+            
+            # --- ADDED THIS PART TO LIST SOURCES FOR SEARCH ---
+            with st.expander("🔗 Verified Sources for this Search"):
+                for art in results[:5]:
+                    if art['title'] != "[Removed]":
+                        st.write(f"**{art['source']['name']}**: [{art['title']}]({art['url']})")
+            
             status.update(label="Search complete!", state="complete")
         else:
             st.warning(f"No recent news found for '{chat_input}'.")
+    
+    # Optional: Add a button to clear the search result and see categories again
+    if st.button("❌ Clear Search Results"):
+        st.rerun()
+    st.divider()
 
 # Personalized Segments
 for category in st.session_state.prefs:
@@ -136,3 +148,4 @@ for category in st.session_state.prefs:
                         st.write(f"**{art['source']['name']}**: [{art['title']}]({art['url']})")
         else:
             st.info(f"No updates for {category} on this date.")
+
