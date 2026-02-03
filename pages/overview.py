@@ -1,95 +1,100 @@
 import streamlit as st
 
-st.set_page_config(page_title="Project Documentation", layout="wide", page_icon="📑")
+st.set_page_config(page_title="Technical Documentation", layout="wide", page_icon="📑")
 
-# Professional Styling
+# Custom CSS for a professional look
 st.markdown("""
     <style>
-    .stMetric {
-        background-color: #ffffff;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
+    .main-header { font-size: 2.5rem; font-weight: 700; color: #1E3A8A; }
+    .sub-header { font-size: 1.5rem; font-weight: 600; color: #1E40AF; margin-top: 20px; }
+    .highlight { background-color: #EFF6FF; padding: 20px; border-radius: 10px; border-left: 5px solid #3B82F6; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📑 Project Overview & Documentation")
-st.caption("Daily News Brief Generator | Technical Deep-Dive")
+st.markdown('<div class="main-header">📑 Technical Overview & Judge Documentation</div>', unsafe_allow_html=True)
+st.caption("AI Daily News Brief Generator | Multi-Source Personalization Engine")
 
 st.divider()
 
-# --- SECTION 1: CORE ESSENCE ---
-st.header("1. Project Essence")
-m_col1, m_col2, m_col3 = st.columns(3)
-with m_col1:
-    st.metric(label="System Focus", value="Personalization")
-with m_col2:
-    st.metric(label="Primary LLM", value="Llama-3.3 70B")
-with m_col3:
-    st.metric(label="Data Source", value="NewsAPI (Live)")
+# --- SECTION 1: CORE SYSTEM ARCHITECTURE ---
+st.header("1. Core System Architecture")
+st.write("Our system follows a **Retrieval-Augmented Generation (RAG)** pattern designed for real-time news.")
 
-st.info("**Problem Statement:** Readers face information overload. This app filters global news into a 1-minute 'Executive Brief' tailored specifically to user-defined segments.")
 
-st.divider()
 
-# --- SECTION 2: JUDGE'S Q&A (Personalization, Conflicts, Neutrality) ---
-st.header("🎯 Judge's Technical Q&A")
-st.write("Direct answers to key evaluation criteria:")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric(label="Data Refresh Rate", value="1 Hour (Cached)")
+with col2:
+    st.metric(label="Primary Model", value="Llama-3.3-70B")
+with col3:
+    st.metric(label="Processing Layer", value="Async Python/Groq")
 
-q_col1, q_col2, q_col3 = st.columns(3)
-
-with q_col1:
-    st.success("### 👤 Personalization")
-    st.markdown("""
-    **Q: How is it implemented?**
-    - **Selection:** Users pick segments (Tech, Politics, etc.) in the sidebar.
-    - **Persistence:** Choices are stored in `st.session_state` to keep the brief consistent.
-    - **Dynamic Queries:** The backend crafts specific search strings (e.g., 'Business + India') based on these preferences.
-    """)
-
-with q_col2:
-    st.warning("### ⚖️ Conflicts & Duplicates")
-    st.markdown("""
-    **Q: How are duplicates handled?**
-    - **AI Synthesis:** The LLM is prompted to identify overlapping facts across the 6 source articles.
-    - **Deduplication:** It merges similar stories into a single 'Consolidated Brief' and notes the merged sources at the bottom.
-    """)
-
-with q_col3:
-    st.error("### 🛡️ Neutrality & Bias")
-    st.markdown("""
-    **Q: How is bias mitigated?**
-    - **Low Temperature:** Set to `0.3` to ensure factual grounding over creativity.
-    - **Source Diversity:** Aggregating from 6 different outlets prevents a single-source narrative.
-    - **Strict Prompting:** The AI is forbidden from using emotive or opinionated language.
-    """)
+st.markdown("""
+### 🛠️ The Tech Stack
+- **Frontend:** Streamlit for high-reactivity UI.
+- **Aggregation:** NewsAPI fetching from 150,000+ sources including BBC, Reuters, and The Hindu.
+- **Synthesis:** Groq-hosted Llama-3.3-70B for near-instant 1-minute summaries.
+- **Performance:** `@st.cache_data` implementation to ensure API rate limits are never exceeded.
+""")
 
 st.divider()
 
-# --- SECTION 3: DOCUMENTATION (Aggregation & Flows) ---
-st.header("🏗️ Technical Documentation")
+# --- SECTION 2: JUDGE'S EVALUATION CRITERIA ---
+st.header("🎯 Evaluation Criteria: Deep Dive")
 
+# Personalization Section
+st.subheader("👤 Personalization & State Management")
+st.info("""
+**How it works:** The application uses `st.session_state` to persist user-selected 'segments' (e.g., Tech, Business). 
+1. **Default Load:** On launch, the app auto-generates a brief for the user's favorite categories.
+2. **Dynamic Querying:** Queries are reconstructed in real-time based on the 'Region' and 'Segment' inputs.
+3. **Reading Preference:** A custom slider allows users to choose between 'Short', 'Concise', or 'Detailed' synthesis.
+""")
 
+# Conflict & Duplicate Handling
+st.subheader("⚖️ Conflict & Duplicate Management")
+with st.container():
+    st.write("""
+    One of the major challenges of news aggregation is **redundancy**. Our Llama-3 system prompt includes specific logic for:
+    - **Deduplication:** The AI identifies multiple sources reporting the same event and merges them into a single coherent paragraph.
+    - **Consensus vs. Conflict:** The system is instructed to highlight consensus across sources while neutrally noting any conflicting facts (e.g., 'Source A reports 50 casualties while Source B reports 42').
+    """)
+    st.code("""
+# Excerpt from our Deduplication Prompt
+"If stories overlap, merge them into one narrative. 
+If sources conflict, neutrally state the discrepancy."
+    """)
 
-tab1, tab2 = st.tabs(["Aggregation Approach", "Sample User Flows"])
+# Neutrality Section
+st.subheader("🛡️ Neutrality & Bias Mitigation")
+st.warning("""
+**Mitigation Strategy:**
+- **Temperature Control:** We set the model temperature to **0.3**. High temperature leads to 'creative' but potentially biased summaries; low temperature ensures factual grounding.
+- **Neutral Persona:** The AI is strictly role-played as a 'Neutral News Editor.'
+- **Source Transparency:** We provide a 'Verified Sources' expander under every summary so users can verify the raw data themselves.
+""")
+
+st.divider()
+
+# --- SECTION 3: USER FLOW ---
+st.header("🏗️ Sample User Flows")
+tab1, tab2 = st.tabs(["Standard Daily Brief", "Targeted AI Search"])
 
 with tab1:
-    st.subheader("News Aggregation Strategy")
-    st.write("""
-    We use a **Context-Injection Pipeline**:
-    1. **Fetch:** The app calls NewsAPI using the user's selected category, region, and date.
-    2. **Filter:** We extract the Title, Source Name, and Description of the top 6 most relevant articles.
-    3. **Augment:** This raw data is injected into the AI prompt, allowing the model to summarize news that happened *today*, bypassing its training cutoff.
+    st.markdown("""
+    1. **User opens app:** Preferences for 'Tech' and 'Business' are loaded from state.
+    2. **Aggregation:** System fetches 10 articles per category from NewsAPI.
+    3. **Summarization:** AI synthesizes the articles into a 3-sentence Executive Brief.
+    4. **Exploration:** User uses the 'Summary Detail' slider to expand the brief.
     """)
 
 with tab2:
-    st.subheader("Step-by-Step User Flow")
     
     st.markdown("""
-    1. **Landing:** User sees a default personalized brief.
-    2. **Customization:** User adds "Health" in the sidebar and changes the region to "Global."
-    3. **Regeneration:** The app fetches global health news and updates the main screen instantly.
-    4. **Assistance:** User types "Latest on S25 Ultra" in the chat box to get a specific targeted summary.
-    5. **Verification:** User expands the 'Sources' section to see original links for further reading.
+    1. **Query:** User types "Latest on ISRO Moon Mission" into the News Assistant.
+    2. **Focus:** System bypasses standard segments to fetch specific mission data.
+    3. **Insight:** AI generates a targeted brief focused exclusively on that specific topic.
     """)
+
+st.success("Documentation Complete. Ready for evaluation.")
