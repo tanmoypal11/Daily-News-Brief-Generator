@@ -4,24 +4,23 @@ from groq import Groq
 from datetime import datetime, timedelta
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Personalized India News Brief", page_icon="🗞️", layout="wide")
+st.set_page_config(page_title="AI Daily News Brief", page_icon="🗞️", layout="wide")
 
 # Check for API Keys
 if "GROQ_API_KEY" not in st.secrets or "NEWS_API_KEY" not in st.secrets:
-    st.error("Missing API Keys! Please add GROQ_API_KEY and NEWS_API_KEY to Streamlit Secrets.")
+    st.error("Missing API Keys! Please add them to Streamlit Secrets.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 NEWS_API_KEY = st.secrets["NEWS_API_KEY"]
 
-# --- CORE LOGIC ---
+# --- CORE LOGIC WITH CACHING ---
 
+@st.cache_data(ttl=3600) # Cache news for 1 hour
 def fetch_news(query_term, date, region="India"):
-    """
-    Fetch news from multiple sources via NewsAPI
-    """
     url = "https://newsapi.org/v2/everything"
-    search_query = f"{query_term} {region}"
+    # Improved query for better quality results
+    search_query = f"{query_term} AND {region}"
     
     params = {
         "q": search_query,
@@ -29,117 +28,111 @@ def fetch_news(query_term, date, region="India"):
         "to": date.strftime('%Y-%m-%d'),
         "language": "en",
         "sortBy": "relevancy",
+        "pageSize": 10,
         "apiKey": NEWS_API_KEY
     }
     
     try:
         response = requests.get(url, params=params)
         if response.status_code == 200:
-            return response.json().get("articles", [])[:6]
-    except Exception:
-        return []
+            return response.json().get("articles", [])
+    except Exception as e:
+        st.error(f"Error fetching news: {e}")
     return []
 
-def generate_ai_brief(articles, category):
-    """Generates the specific format requested: Brief, Punchy Summaries, and Merging Note"""
+def generate_ai_brief(articles, category, detail_level="Concise"):
     if not articles:
         return None
 
+    # Filter out removed articles
+    valid_articles = [a for a in articles if a['title'] != "[Removed]"]
+    
     context = ""
-    for i, art in enumerate(articles):
+    for i, art in enumerate(valid_articles[:6]):
         context += f"Source {i+1} ({art['source']['name']}): {art['title']} - {art['description']}\n"
 
-    # Strict formatting instructions
+    # Enhanced logic for neutrality and conflict resolution
     prompt = f"""
-    You are an AI news editor. Based on these articles for '{category}':
+    You are a professional, neutral AI news editor. Your task is to summarize news for the '{category}' segment.
     
-    1. Start with 'Consolidated Executive Brief: ' followed by a 3-sentence synthesis.
-    2. Then write 'Punchy Summaries:' followed by a list of 1-sentence summaries for each unique story.
-    3. End with a 'Note: ' explaining if you merged overlapping stories (be specific about which sources).
+    FORMATTING RULES:
+    1. Start with '### 📌 Consolidated Executive Brief'
+    2. Provide a 3-sentence synthesis of the most important developments.
+    3. If different sources report conflicting facts, note the discrepancy neutrally (e.g., 'While Source A reports X, Source B suggests Y').
+    4. Group overlapping stories together to avoid repetition.
+    5. List 'Punchy Summaries' for unique stories.
+    6. Detail Level: {detail_level}.
     
-    Tone: Strictly neutral, professional, and unbiased.
+    TONE: Third-person, objective, no inflammatory language, no personal opinions.
     
-    News Articles:
+    NEWS DATA:
     {context}
     """
 
-    completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3
-    )
-    return completion.choices[0].message.content
+    try:
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": "You are a neutral news aggregator that deduplicates information."},
+                      {"role": "user", "content": prompt}],
+            temperature=0.3 # Low temperature for factual consistency
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        return f"Error generating summary: {e}"
 
 # --- UI & STATE MANAGEMENT ---
 
-if "search_result" not in st.session_state:
-    st.session_state.search_result = None
-if "search_query" not in st.session_state:
-    st.session_state.search_query = None
+# Initialize session state for personalization
+if "prefs" not in st.session_state:
+    st.session_state.prefs = ["Technology", "Business"]
 
-# Sidebar for Preferences
 with st.sidebar:
     st.title("⚙️ Personalization")
     
-    all_categories = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics","Everything"]
-    user_prefs = st.multiselect("Your preferred segments:", all_categories, default=["Technology", "Business"])
+    all_categories = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics", "Science"]
+    st.session_state.prefs = st.multiselect("Your preferred segments:", all_categories, default=st.session_state.prefs)
     
-    region = st.radio("Region:", ["India", "Global"], horizontal=True)
+    region = st.radio("Focus Region:", ["India", "Global"], horizontal=True)
     selected_date = st.date_input("Select Date", datetime.now() - timedelta(days=1))
+    detail_level = st.select_slider("Reading Preference:", options=["Bullet Points", "Concise", "Detailed"], value="Concise")
     
     st.divider()
-    
     st.subheader("🤖 News Assistant")
     chat_input = st.chat_input("Ask about a specific topic...")
-    
-    if chat_input:
-        with st.spinner(f"Searching for '{chat_input}'..."):
-            results = fetch_news(chat_input, selected_date, region)
-            if results:
-                st.session_state.search_query = chat_input
-                st.session_state.search_result = {
-                    "brief": generate_ai_brief(results, chat_input),
-                    "sources": results
-                }
-            else:
-                st.session_state.search_query = chat_input
-                st.session_state.search_result = "No news found."
 
-# --- MAIN SCREEN DISPLAY ---
+# --- MAIN DASHBOARD ---
 
-st.title(f"🗞️ Daily News Briefing")
-st.caption(f"Showing results for {selected_date.strftime('%d %b %Y')} | Region: {region}")
+st.title("🗞️ Your Daily News Brief")
+st.caption(f"Personalized for you | {selected_date.strftime('%d %B %Y')} | {region} Edition")
 
-# 1. Display Chat Search Result First
-if st.session_state.search_result:
-    st.markdown(f"## 🔍 Search: {st.session_state.search_query}")
-    if isinstance(st.session_state.search_result, dict):
-        st.markdown(st.session_state.search_result["brief"])
-        
-        with st.expander("🔗 View Sources & Timestamps"):
-            for art in st.session_state.search_result["sources"]:
-                st.markdown(f"**{art['source']['name']}**: [{art['title']}]({art['url']})")
-    else:
-        st.info(st.session_state.search_result)
-    
-    if st.button("Clear Search Results"):
-        st.session_state.search_result = None
-        st.rerun()
-    st.divider()
-
-# 2. Display Categorized News
-for category in user_prefs:
-    st.markdown(f"### 🔹 {category}")
-    articles = fetch_news(category, selected_date, region)
-    
-    if articles:
-        with st.spinner(f"Summarizing {category}..."):
-            brief = generate_ai_brief(articles, category)
+# Assistant Results (Top priority)
+if chat_input:
+    with st.status(f"Searching for '{chat_input}'...", expanded=True) as status:
+        results = fetch_news(chat_input, selected_date, region)
+        if results:
+            brief = generate_ai_brief(results, chat_input, detail_level)
+            st.markdown(f"## 🔍 Custom Insight: {chat_input}")
             st.markdown(brief)
+            status.update(label="Search complete!", state="complete")
+        else:
+            st.warning(f"No recent news found for '{chat_input}'.")
+
+# Personalized Segments
+for category in st.session_state.prefs:
+    with st.container(border=True):
+        col1, col2 = st.columns([0.7, 0.3])
+        with col1:
+            st.subheader(f"🔹 {category}")
         
-        with st.expander("🔗 View Sources & Timestamps"):
-            for art in articles:
-                st.markdown(f"**{art['source']['name']}**: [{art['title']}]({art['url']})")
-        st.divider()
-    else:
-        st.info(f"No news found for {category}.")
+        articles = fetch_news(category, selected_date, region)
+        
+        if articles:
+            brief = generate_ai_brief(articles, category, detail_level)
+            st.markdown(brief)
+            
+            with st.expander("🔗 Verified Sources"):
+                for art in articles[:5]:
+                    if art['title'] != "[Removed]":
+                        st.write(f"**{art['source']['name']}**: [{art['title']}]({art['url']})")
+        else:
+            st.info(f"No updates for {category} on this date.")
