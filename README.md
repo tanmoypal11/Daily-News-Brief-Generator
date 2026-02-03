@@ -1,83 +1,205 @@
-🗞️ Daily News Brief Generator
-A Personalized, AI-Driven News Synthesis System
+# 🗞️ Daily News Brief Generator
 
-The Daily News Brief Generator is an intelligent news aggregator designed to combat information overload. Instead of scrolling through endless headlines, users receive a Consolidated Executive Brief tailored to their specific interests (Tech, Business, Politics, etc.), region, and date.
+An AI-powered, personalized news aggregation and summarization platform that delivers **concise, neutral, and relevant daily news briefs** tailored to individual user preferences.
 
-By leveraging Llama-3.3-70B via Groq and NewsAPI, the system fetches real-time data, deduplicates overlapping stories, and presents a neutral, high-impact summary.
+---
 
-🚀 Live Demo
-[https://daily-news-brief-generator-jeappevnrnyqz4xabvr9bx6.streamlit.app/]
+## 📌 Overview
 
-✨ Key Features
-Personalized Dashboards: Defaults to your favorite segments on load using st.session_state.
+In an era of information overload, the **Daily News Brief Generator** helps users stay informed without the noise. The application aggregates news from multiple trusted sources and uses large language models to generate **clear, unbiased, and easy-to-read summaries** based on user-selected interests.
 
-Multi-Source Synthesis: Aggregates data from global and local Indian sources (BBC, Reuters, The Hindu, etc.).
+The platform prioritizes:
 
-AI News Assistant: A "Chat-style" search box on the main screen for specific, real-time queries.
+* Personalization
+* Multi-source aggregation
+* Neutral AI summarization
+* Clean and intuitive UX
 
-Smart Deduplication: AI logic identifies and merges duplicate news stories from different outlets into a single narrative.
+---
 
-Source Transparency: Every summary includes a "View Sources" expander with direct links and timestamps.
+## 🎯 Key Features
 
-🛠️ Tech Stack
-Frontend: Streamlit (Python-based Web Framework)
+### 👤 Personalized News Experience
 
-AI Engine: Groq Cloud (Llama-3.3-70B-Versatile)
+* Select preferred news segments (Technology, Business, Sports, Health, etc.)
+* Preferences persist using session state
+* Personalized brief loads automatically on home page
 
-News Data: NewsAPI
+### 📰 Multi-Source News Aggregation
 
-Deployment: Streamlit Cloud
+* Fetches news from **NewsAPI** (BBC, Reuters, The Hindu, and more)
+* Supports region-based filtering (India / Global)
+* Cached for performance and API efficiency
 
-📁 Repository Structure
-Plaintext
-├── app.py                 # Main application (News Briefing Dashboard)
-├── requirements.txt       # Python dependencies
-├── README.md              # Project documentation
-└── pages/                 # Multi-page directory
-    └── overview.py  # Technical deep-dive & Judge Q&A
-⚙️ Setup & Installation
-Clone the Repository:
+### 🤖 AI-Powered Summarization
 
-Bash
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
-Install Dependencies:
+* Uses **LLaMA 3.3 (70B)** via Groq for ultra-fast inference
+* Generates:
 
-Bash
+  * Consolidated executive briefs
+  * Bullet-level summaries
+* Deduplicates overlapping stories
+* Neutrally highlights conflicting reports across sources
+
+### ⚙️ Customization Options
+
+* Change:
+
+  * News category
+  * Date (explore past briefs)
+  * Reading depth (Bullet / Concise / Detailed)
+* On-demand topic search via AI News Assistant
+
+### 🏠 Home Page Experience
+
+* Section-wise personalized layout
+* Timestamped briefs
+* Verified source references with links
+
+---
+
+## 🧠 System Architecture
+
+**Design Pattern:** Retrieval-Augmented Generation (RAG)
+
+**Flow:**
+
+1. Fetch news articles from APIs
+2. Cache results for 1 hour
+3. Feed cleaned data into LLM
+4. Generate neutral, consolidated summaries
+5. Render results in Streamlit UI
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer        | Technology       |
+| ------------ | ---------------- |
+| Frontend     | Streamlit        |
+| Backend      | Python           |
+| News Sources | NewsAPI          |
+| AI / NLP     | LLaMA 3.3 (Groq) |
+| Caching      | Streamlit Cache  |
+| Storage      | Session State    |
+| Deployment   | Streamlit Cloud  |
+
+---
+
+## 📂 Project Structure
+
+```
+Daily-News-Brief-Generator/
+│
+├── app.py                 # Main application logic
+├── pages/
+│   └── overview.py        # Technical documentation & judge guide
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/your-username/Daily-News-Brief-Generator.git
+cd Daily-News-Brief-Generator
+```
+
+### 2️⃣ Install Dependencies
+
+```bash
 pip install -r requirements.txt
-Configure Secrets: Create a .streamlit/secrets.toml file (for local testing) or add these to your Streamlit Cloud secrets:
+```
 
-Ini, TOML
-GROQ_API_KEY = ""
-NEWS_API_KEY = ""
-Run the App:
+### 3️⃣ Configure Secrets
 
-Bash
+Create `.streamlit/secrets.toml`
+
+```toml
+NEWS_API_KEY = "your_newsapi_key"
+GROQ_API_KEY = "your_groq_api_key"
+```
+
+### 4️⃣ Run Locally
+
+```bash
 streamlit run app.py
-🧠 Technical Logic
-1. Personalization Logic
-The app uses a Reactivity Loop. When a user selects a category (e.g., "Technology"), the app dynamically constructs a search query combined with the user's selected region and date. Preferences are stored in the session state to ensure a seamless "Default Home Page" experience.
+```
 
-2. Conflict & Duplicate Handling
-We utilize the high reasoning capability of Llama-3.3-70B. We feed it a context of 6 articles per category. The system prompt instructs the AI to:
+---
 
-Identify overlapping facts.
+## 🌐 Deployment
 
-Merge them into a single coherent paragraph.
+The application is deployed using **Streamlit Cloud**.
 
-Highlight consensus and note discrepancies between sources.
+Judges and users can:
 
-3. Neutrality & Bias Mitigation
-To ensure the reports remain unbiased:
+* Select news segments
+* Change date and reading preferences
+* Generate real-time AI summaries
+* Explore targeted topic-based insights
 
-Low Temperature: The LLM temperature is set to 0.3 to prevent "hallucinations" or creative opinions.
+🔗 **Public URL:** *(Add deployed app link here)*
 
-Source Diversity: By pulling from 6 different publishers, we prevent a single-source narrative from dominating the brief.
+---
 
-Journalistic Prompting: The system role is defined as a "Strictly Neutral News Editor."
+## 🔍 Sample Output
 
-📬 Contact & Submission
-Developer: Tanmoy Pal
+**Your Daily Tech Brief – 14 Nov 2025**
 
+* AI regulation discussions intensify across global markets
+* Major tech firm releases new open-source AI framework
+* Cybersecurity concerns rise after recent data breaches
 
-Project Goal: Submission for the AI Daily News Brief Challenge.
+**Business Highlights:**
+
+* Markets show mixed trends amid inflation worries
+* Startup funding slows in Q4
+
+Sources: BBC, Reuters, The Hindu
+
+---
+
+## ⚖️ Neutrality & Bias Mitigation
+
+* Low temperature setting (0.3) for factual consistency
+* Explicit system role: *Neutral News Editor*
+* Conflicting reports highlighted without opinion
+* Full source transparency via verified links
+
+---
+
+## 🧪 Evaluation Alignment
+
+| Criteria        | Implementation            |
+| --------------- | ------------------------- |
+| Personalization | Session-based preferences |
+| Insight Quality | AI executive synthesis    |
+| Multi-Source    | NewsAPI aggregation       |
+| AI Utilization  | LLaMA 3.3 summarization   |
+| UX              | Clean Streamlit UI        |
+| Deployment      | Public Streamlit app      |
+
+---
+
+## 🚀 Future Enhancements
+
+* User authentication & persistent profiles
+* Multi-language news support
+* Sentiment indicators
+* Email-based daily brief delivery
+* Offline dataset mode
+
+---
+
+## 📜 License
+
+This project is intended for educational and evaluation purposes.
+
+---
+
+✅ **Ready for evaluation. Built for clarity, speed, and insight.**
