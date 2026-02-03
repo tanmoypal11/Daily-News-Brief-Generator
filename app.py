@@ -89,7 +89,7 @@ if "prefs" not in st.session_state:
 with st.sidebar:
     st.title("⚙️ Personalization")
     
-    all_categories = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics", "Science"]
+    all_categories = ["Technology", "Business", "Sports", "Health", "Entertainment", "Politics", "Science", "Everything"]
     st.session_state.prefs = st.multiselect("Your preferred segments:", all_categories, default=st.session_state.prefs)
     
     region = st.radio("Focus Region:", ["India", "Global"], horizontal=True)
@@ -148,4 +148,5 @@ for category in st.session_state.prefs:
                         st.write(f"**{art['source']['name']}**: [{art['title']}]({art['url']})")
         else:
             st.info(f"No updates for {category} on this date.")
+
 
